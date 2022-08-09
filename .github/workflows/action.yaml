@@ -13,7 +13,7 @@ jobs:
       - shell: bash
         run: |
           echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN} > token.txt
-          echo "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" | base64 --decode
+          echo "ID TOken:${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
       - id: idtoken
         shell: bash
         run: |
