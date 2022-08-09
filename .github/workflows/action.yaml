@@ -20,7 +20,7 @@ jobs:
         run: |
           token=${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
           runtimeUrl=${ACTIONS_ID_TOKEN_REQUEST_URL}
-          runtimeUrl="${runtimeUrl}&audience=google-wlif"
+          runtimeUrl="${runtimeUrl}&audience=oidc_github_audience"
           echo $runtimeUrl
           ID_TOKEN=$(curl -H "Authorization: bearer ${token}" ${runtimeUrl} | jq -r ".value")
           echo ::set-output name=idtoken::$ID_TOKEN
@@ -49,7 +49,7 @@ jobs:
       - id: access_token
         shell: bash
         run: |
-          ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${{secrets.SA_NAME}}:generateAccessToken \
+          ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/354637341667/serviceAccounts/${{ secrets.SA_NAME }}:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer ${{ steps.sts_token.outputs.sts_token }}" \
               -d @- <<EOF | jq -r .accessToken
