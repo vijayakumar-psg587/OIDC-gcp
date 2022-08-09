@@ -31,7 +31,7 @@ jobs:
       - id: sts_token
         shell: bash
         run: |
-          GCP_PROVIDER = echo '${{ secrets.GCP_PROVIDER_NAME }}' | base64 --decode
+          GCP_PROVIDER=echo '${{ secrets.GCP_PROVIDER_NAME }}' | base64 --decode
           echo "GCP provider:${GCP_PROVIDER}"
           STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
               -H 'Content-Type: text/json; charset=utf-8' \
