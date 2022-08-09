@@ -9,11 +9,11 @@ jobs:
       - shell: bash
         run: |
           echo ${ACTIONS_ID_TOKEN_REQUEST_URL} > url.txt
-          echo ${ACTIONS_ID_TOKEN_REQUEST_URL}
+          echo "ID TOken url:${ACTIONS_ID_TOKEN_REQUEST_URL}"
       - shell: bash
         run: |
           echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN} > token.txt
-          echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
+          echo "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" | base64 --decode
       - id: idtoken
         shell: bash
         run: |
