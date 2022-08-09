@@ -14,6 +14,7 @@ jobs:
         run: |
           echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN} > token.txt
           echo "ID TOken:${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          cat token.txt
       - id: idtoken
         shell: bash
         run: |
@@ -24,6 +25,7 @@ jobs:
           ID_TOKEN=$(curl -H "Authorization: bearer ${token}" ${runtimeUrl} | jq -r ".value")
           echo ::set-output name=idtoken::$ID_TOKEN
           echo $ID_TOKEN > idtoken.txt
+          cat idtoken.txt
           echo "ID Token from github is:${ID_TOKEN}"
       - id: sts_token
         shell: bash
