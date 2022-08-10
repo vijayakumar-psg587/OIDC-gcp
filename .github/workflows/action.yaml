@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           echo "Project number is: ${{secrets.PROJECT_NUMBER}}" | sed 's/./& /g' | 
-          STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1/token \
+          STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1beta/token \
               -H 'Content-Type: text/json; charset=utf-8' \
               -d @- <<EOF | jq -r .access_token
               {
