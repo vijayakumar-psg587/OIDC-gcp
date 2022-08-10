@@ -20,11 +20,11 @@ jobs:
           name: 'Authenticate to Google Cloud'
           uses: 'google-github-actions/auth@v0'
           with:
-            
+            token_format: 'access_token'
             workload_identity_provider: 'projects/354637341667/locations/global/workloadIdentityPools/autodidact-gcp-pool/providers/github-provider'
             service_account: 'oidc-gcp-sa@modular-hulling-180102.iam.gserviceaccount.com'
          # This example uses the docker login action
-        - uses: 'docker/login-action@v1'
+        - uses: 'docker/login-action@v2'
           with:
             registry: 'gcr.io' # or REGION-docker.pkg.dev
             username: 'oauth2accesstoken'
