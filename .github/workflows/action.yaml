@@ -41,7 +41,7 @@ jobs:
               -H 'Content-Type: text/json; charset=utf-8' \
               -d @- <<EOF | jq -r .access_token
               {
-                  "audience"           : "//iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_PROVIDER_POOL_NAME}/providers/${GCP_PROVIDER_NAME}",
+                  "audience"           : "//iam.googleapis.com/projects/354637341667/locations/global/workloadIdentityPools/autodidact-gcp-pool/providers/github-provider",
                   "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
                   "requestedTokenType" : "urn:ietf:params:oauth:token-type:access_token",
                   "scope"              : "https://www.googleapis.com/auth/cloud-platform",
@@ -55,7 +55,7 @@ jobs:
       - id: access_token
         shell: bash
         run: |
-          ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/354637341667/serviceAccounts/${SA_NAME}:generateAccessToken \
+          ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/354637341667/serviceAccounts/oidc_gcp_sa:generateAccessToken \
               -H "Content-Type: text/json; charset=utf-8" \
               -H "Authorization: Bearer ${{ steps.sts_token.outputs.sts_token }}" \
               -d @- <<EOF | jq -r .accessToken
@@ -68,6 +68,6 @@ jobs:
           echo ::set-output name=access_token::$ACCESS_TOKEN
       - name: 'Access secret'
         run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/${PROJECT_ID}/secrets/my-secret/versions/1:access \
+          curl https://secretmanager.googleapis.com/v1/projects/modular-hulling-180102/secrets/my-secret/versions/1:access \
             --header "Authorization: Bearer ${{ steps.access_token.outputs.access_token }}"
           echo "Done!!!" 
