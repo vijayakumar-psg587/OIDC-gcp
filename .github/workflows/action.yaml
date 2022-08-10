@@ -10,64 +10,90 @@ jobs:
   OIDC-GCP:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
+      id-token: 'write'
+      contents: 'read'
     steps:
-      - shell: bash
-        run: |
-          echo ${ACTIONS_ID_TOKEN_REQUEST_URL} > url.txt
-          echo "ID TOken url:${ACTIONS_ID_TOKEN_REQUEST_URL}"
-      - shell: bash
-        run: |
-          echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN} > token.txt
-          echo "ID TOken:${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
-          cat token.txt
-      - id: idtoken
-        shell: bash
-        run: |
-          token=${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
-          runtimeUrl=${ACTIONS_ID_TOKEN_REQUEST_URL}
-          runtimeUrl="${runtimeUrl}&audience=oidc_github_audience"
-          echo $runtimeUrl
-          ID_TOKEN=$(curl -H "Authorization: bearer ${token}" ${runtimeUrl} | jq -r ".value")
-          echo ::set-output name=idtoken::$ID_TOKEN
-          echo $ID_TOKEN > idtoken.txt
-          cat idtoken.txt
-          echo "ID Token from github is:${ID_TOKEN}"
-      - id: sts_token
-        shell: bash
-        run: |
-          echo "Project number is: ${{secrets.PROJECT_NUMBER}}" | sed 's/./& /g' | 
-          STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1beta/token \
-              -H 'Content-Type: text/json; charset=utf-8' \
-              -d @- <<EOF | jq -r .access_token
-              {
-                  "audience"           : "//iam.googleapis.com/projects/354637341667/locations/global/workloadIdentityPools/autodidact-gcp-pool/providers/github-provider",
-                  "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
-                  "requestedTokenType" : "urn:ietf:params:oauth:token-type:access_token",
-                  "scope"              : "https://www.googleapis.com/auth/cloud-platform",
-                  "subjectTokenType"   : "urn:ietf:params:oauth:token-type:jwt",
-                  "subjectToken"       : "${{steps.idtoken.outputs.idtoken}}"
-              }
-          EOF)
-          echo "STS TOKEN:${STS_TOKEN}"
-          echo $STS_TOKEN > sts_token.txt
-          echo ::set-output name=sts_token::$STS_TOKEN
-      - id: access_token
-        shell: bash
-        run: |
-          ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/354637341667/serviceAccounts/oidc_gcp_sa:generateAccessToken \
-              -H "Content-Type: text/json; charset=utf-8" \
-              -H "Authorization: Bearer ${{ steps.sts_token.outputs.sts_token }}" \
-              -d @- <<EOF | jq -r .accessToken
-              {
-                  "scope": [ "https://www.googleapis.com/auth/cloud-platform" ]
-              }
-          EOF)
-          echo $ACCESS_TOKEN > access_token.txt
-          echo "ACCESS TOKEN:${ACCESS_TOKEN}"
-          echo ::set-output name=access_token::$ACCESS_TOKEN
-      - name: 'Access secret'
-        run: |-
-          curl https://secretmanager.googleapis.com/v1/projects/modular-hulling-180102/secrets/my-secret/versions/1:access \
-            --header "Authorization: Bearer ${{ steps.access_token.outputs.access_token }}"
-          echo "Done!!!" 
+        # actions/checkout MUST come before auth
+        - uses: 'actions/checkout@v3'
+
+        - id: 'auth'
+          name: 'Authenticate to Google Cloud'
+          uses: 'google-github-actions/auth@v0'
+          with:
+            token_format: 'access_token'
+            workload_identity_provider: 'projects/354637341667/locations/global/workloadIdentityPools/autodidact-gcp-pool/providers/github-provider'
+            service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+         # This example uses the docker login action
+        - uses: 'docker/login-action@v1'
+          with:
+            registry: 'gcr.io' # or REGION-docker.pkg.dev
+            username: 'oauth2accesstoken'
+            password: '${{ steps.auth.outputs.access_token }}'
+
+        # This example runs "docker login" directly to Artifact Registry.
+        - run: |-
+            echo '${{ steps.auth.outputs.access_token }}' | docker login -u oauth2accesstoken --password-stdin https://REGION-docker.pkg.dev
+
+        # This example runs "docker login" directly to Container Registry.
+        - run: |-
+            echo '${{ steps.auth.outputs.access_token }}' | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+#     steps:
+#       - shell: bash
+#         run: |
+#           echo ${ACTIONS_ID_TOKEN_REQUEST_URL} > url.txt
+#           echo "ID TOken url:${ACTIONS_ID_TOKEN_REQUEST_URL}"
+#       - shell: bash
+#         run: |
+#           echo ${ACTIONS_ID_TOKEN_REQUEST_TOKEN} > token.txt
+#           echo "ID TOken:${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+#           cat token.txt
+#       - id: idtoken
+#         shell: bash
+#         run: |
+#           token=${ACTIONS_ID_TOKEN_REQUEST_TOKEN}
+#           runtimeUrl=${ACTIONS_ID_TOKEN_REQUEST_URL}
+#           runtimeUrl="${runtimeUrl}&audience=oidc_github_audience"
+#           echo $runtimeUrl
+#           ID_TOKEN=$(curl -H "Authorization: bearer ${token}" ${runtimeUrl} | jq -r ".value")
+#           echo ::set-output name=idtoken::$ID_TOKEN
+#           echo $ID_TOKEN > idtoken.txt
+#           cat idtoken.txt
+#           echo "ID Token from github is:${ID_TOKEN}"
+#       - id: sts_token
+#         shell: bash
+#         run: |
+#           echo "Project number is: ${{secrets.PROJECT_NUMBER}}" | sed 's/./& /g' | 
+#           STS_TOKEN=$(curl -0 -X POST https://sts.googleapis.com/v1beta/token \
+#               -H 'Content-Type: text/json; charset=utf-8' \
+#               -d @- <<EOF | jq -r .access_token
+#               {
+#                   "audience"           : "//iam.googleapis.com/projects/354637341667/locations/global/workloadIdentityPools/autodidact-gcp-pool/providers/github-provider",
+#                   "grantType"          : "urn:ietf:params:oauth:grant-type:token-exchange",
+#                   "requestedTokenType" : "urn:ietf:params:oauth:token-type:access_token",
+#                   "scope"              : "https://www.googleapis.com/auth/cloud-platform",
+#                   "subjectTokenType"   : "urn:ietf:params:oauth:token-type:jwt",
+#                   "subjectToken"       : "${{steps.idtoken.outputs.idtoken}}"
+#               }
+#           EOF)
+#           echo "STS TOKEN:${STS_TOKEN}"
+#           echo $STS_TOKEN > sts_token.txt
+#           echo ::set-output name=sts_token::$STS_TOKEN
+#       - id: access_token
+#         shell: bash
+#         run: |
+#           ACCESS_TOKEN=$(curl -0 -X POST https://iamcredentials.googleapis.com/v1/projects/354637341667/serviceAccounts/oidc_gcp_sa:generateAccessToken \
+#               -H "Content-Type: text/json; charset=utf-8" \
+#               -H "Authorization: Bearer ${{ steps.sts_token.outputs.sts_token }}" \
+#               -d @- <<EOF | jq -r .accessToken
+#               {
+#                   "scope": [ "https://www.googleapis.com/auth/cloud-platform" ]
+#               }
+#           EOF)
+#           echo $ACCESS_TOKEN > access_token.txt
+#           echo "ACCESS TOKEN:${ACCESS_TOKEN}"
+#           echo ::set-output name=access_token::$ACCESS_TOKEN
+#       - name: 'Access secret'
+#         run: |-
+#           curl https://secretmanager.googleapis.com/v1/projects/modular-hulling-180102/secrets/my-secret/versions/1:access \
+#             --header "Authorization: Bearer ${{ steps.access_token.outputs.access_token }}"
+#           echo "Done!!!" 
